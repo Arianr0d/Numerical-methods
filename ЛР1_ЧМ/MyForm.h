@@ -487,14 +487,6 @@ namespace ËÐ1×Ì {
 			return L;
 		}
 
-		double Polinom_N(double q, int n, std::vector <double> arr_N) {
-			double L = 0;
-			for (int j = 0; j < n; j++) {
-				L += pow(q, j) * arr_N[j];
-			}
-			return L;
-		}
-
 #pragma endregion
 	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
 		this->chart1->Series[0]->Points->Clear();
@@ -507,7 +499,11 @@ namespace ËÐ1×Ì {
 
 		int n = int::Parse(textBox1->Text);
 
-		double h = (2 / (double)(n - 1));// èñïðàâèòü
+		double n1 = double::Parse(textBox2->Text);
+		double n2 = double::Parse(textBox3->Text);
+		double interval = (abs(n1) + abs(n2)) / 100;
+
+		double h = (abs(n2 - n1) / (double)(n - 1));
 		std::vector<double> arr_x(n);
 		for (int i = 0; i < n; i++) {
 			arr_x[i] = -1 + h * i;
@@ -564,9 +560,6 @@ namespace ËÐ1×Ì {
 			c = n - 1;
 		}
 
-		double n1 = double::Parse(textBox2->Text);
-		double n2 = double::Parse(textBox3->Text);
-		double interval = (abs(n1) + abs(n2)) / 100;
 
 		for (double i = n1; i <= n2; i += interval) {
 			this->chart1->Series["Series1"]->Points->AddXY(i, (exp(-i) + 2 * sin(i)));
@@ -654,7 +647,12 @@ namespace ËÐ1×Ì {
 
 		int n = int::Parse(textBox1->Text);
 
-		double h = (2 / (double)(n - 1));
+		double n1 = double::Parse(textBox2->Text);
+		double n2 = double::Parse(textBox3->Text);
+		double interval = (abs(n1) + abs(n2)) / 100;
+
+		double h = (abs(n2 - n1) / (double)(n - 1));
+
 		std::vector<double> arr_x(n);
 		for (int i = 0; i < n; i++) {
 			arr_x[i] = -1 + h * i;
@@ -670,63 +668,54 @@ namespace ËÐ1×Ì {
 			arr_y1[i] = arr_y[i];
 		}
 
-		int c1 = 0;
+		int c1 = 0, c2 = 0;
 		std::vector<double> arr_rr(n);
 		arr_rr[0] = arr_y1[0];
 		for (int j = 1; j < n; j++) {
 			for (int i = (n - 2); i >= c1; i--) {
-				arr_y1[i + 1] = arr_y1[i + 1] - arr_y1[i];
+				arr_y1[i + 1] = (arr_y1[i + 1] - arr_y1[i]) / (arr_x[i + 1] - arr_x[i - c2]);
 			}
 			c1 = j;
+			c2 = j;
 			arr_rr[j] = arr_y1[j];
 		}
 
-		c1 = 1;
-		arr_y1[0] = 0;
-		for (int i = 1; i < n; i++) {
-			arr_rr[i] /= c1;
-			c1 = c1 * (i + 1);
-			if (i <= (n - 1)) {
-				arr_y1[i] = -i;
-			}
-		}
+		int c3 = n - 1;
+		std::vector <double> arr_per_N(n, 1);
+		std::vector <double> arr_N1(n, 0);
+		arr_N1[0] = arr_rr[0];
 
-		int l = 1;
-		c1 = n;
-		std::vector<double> arr_per_N(n, 1);
-		std::vector<double> arr_N(n, 0);
-		arr_N[0] = arr_rr[0];
-		for (int i = 0; i < n; i++) {
-			for (int j = n - c1; j > 0 && j < (n - 1); j--) {
-				arr_per_N[0] = 0;
+		for (int i = 0; i < n - 1; i++) {
+			for (int k = n - c3 - 1; k >= 0; k--) {
 				if (i == 0) {
-					break;
+					arr_per_N[k] = -arr_x[i];
 				}
 				else {
-					arr_per_N[j] = arr_per_N[j] * (arr_y1[i]) + arr_per_N[j - 1];
+					if (k == 0) {
+						arr_per_N[k] *= -arr_x[i];
+					}
+					else {
+						arr_per_N[k] = arr_per_N[k] * (-arr_x[i]) + arr_per_N[k - 1];
+					}
 				}
-			}
-			arr_per_N[0] = 0;
-			for (int k = 0; k < n; k++) {
 			}
 
-			if (l < n) {
-				for (int k = 1; k <= l && k < n; k++) {
-					arr_N[k] += arr_per_N[k] * arr_rr[i + 1];
-				}
+			c3--;
+			
+			for (int j = 0; j <= n - c3 - 1; j++) {
+				arr_N1[j] += arr_rr[i + 1] * arr_per_N[j];
 			}
-			l++;
-			c1--;
 		}
 
-		double n1 = double::Parse(textBox2->Text);
-		double n2 = double::Parse(textBox3->Text);
-		double interval = (abs(n1) + abs(n2)) / 100;
+		std::vector <double> arr_N(n, 0);
+		for (int i = n - 1; i >= 0; i--) {
+			arr_N[i] = arr_N1[n - 1 - i];
+		}
 
 		for (double i = n1; i <= n2; i += interval) {
 			this->chart2->Series["Series1"]->Points->AddXY(i, (exp(-i) + 2 * sin(i)));
-			this->chart2->Series["Series2"]->Points->AddXY(i, Polinom_N(((i - n1) / h), n, arr_N));
-			this->chart3->Series["Series1"]->Points->AddXY(i, abs(exp(-i) + 2 * sin(i) - Polinom_N(((i - n1) / h), n, arr_N)));
+			this->chart2->Series["Series2"]->Points->AddXY(i, Polinom(i, n, arr_N));
+			this->chart3->Series["Series1"]->Points->AddXY(i, abs(exp(-i) + 2 * sin(i) - Polinom(i, n, arr_N)));
 		}
 
 		for (int i = 0; i < n; i++) {
